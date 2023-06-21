@@ -3,3 +3,13 @@
     margin: 0px;
     font-size: 35px;
 }
+
+#fiveDay {
+    border: 2%;
+    border-color: black;
+}
+
+#searchHistory {
+    font-size: 50px;
+}
+
