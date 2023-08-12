@@ -1,141 +1,116 @@
-const apiKey = '9d98a835a05f7570c57fc8265a0dbc16';
-const today = moment().format('L');
-const searchHistoryList = [];
+const APIKey = "9d98a835a05f7570c57fc8265a0dbc16";
 
-// Function to fetch current weather conditions
-function getCurrentWeather(city) {
-  const queryURL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=imperial&appid=${apiKey}`;
+const elements = {
+    city: document.getElementById("enterCity"),
+    search: document.getElementById("searchButton"),
+    clear: document.getElementById("clearHistory"),
+    name: document.getElementById("cityName"),
+    currentPic: document.getElementById("currentPic"),
+    currentTemp: document.getElementById("temperature"),
+    currentHumidity: document.getElementById("humidity"),
+    currentWind: document.getElementById("windSpeed"),
+    currentUV: document.getElementById("UVindex"),
+    history: document.getElementById("history"),
+    fiveday: document.getElementById("fivedayHeader"),
+    todayweather: document.getElementById("todayWeather"),
+    forecast: document.querySelectorAll(".forecast")
+};
 
-  $.ajax({
-    url: queryURL,
-    method: "GET",
-  }).then(function(cityWeatherResponse) {
-    console.log(cityWeatherResponse);
+let searchHistory = JSON.parse(localStorage.getItem("search")) || [];
 
-    $("#weatherContent").css("display", "block");
-    $("#cityDetail").empty();
-
-    const { name, weather, main, wind, coord } = cityWeatherResponse;
-    const iconCode = weather[0].icon;
-    const iconImage = `https://openweathermap.org/img/w/${iconCode}.png`;
-
-    const currentCity = $(`
-      <h2 id="currentCity">
-        ${name} ${today} <img src="${iconImage}" alt="${weather[0].description}" />
-      </h2>
-      <p>Temperature: ${main.temp} °F</p>
-      <p>Humidity: ${main.humidity}%</p>
-      <p>Wind Speed: ${wind.speed} MPH</p>
-    `);
-
-    $("#cityDetail").append(currentCity);
-
-    const { lat, lon } = coord;
-    getUVIndex(lat, lon);
-    getForecast(lat, lon);
-  });
+function degreeChange(K) {
+    return Math.floor((K - 273.15) * 1.8 + 32);
 }
 
+function setUVBadge(value) {
+    const badgeClass = value < 4 ? "badge-success" :
+                      value < 8 ? "badge-warning" : "badge-danger";
+    const span = document.createElement("span");
+    span.classList.add("badge", badgeClass);
+    span.innerText = value;
+    return span;
+}
+
+function displayWeatherData(data) {
+    const date = new Date(data.dt * 1000);
+    elements.name.innerHTML = `${data.name} (${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()})`;
+    elements.currentPic.src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+    elements.currentPic.alt = data.weather[0].description;
+    elements.currentTemp.innerHTML = `Temperature: ${degreeChange(data.main.temp)} &#176F`;
+    elements.currentHumidity.innerHTML = `Humidity: ${data.main.humidity}%`;
+    elements.currentWind.innerHTML = `Wind Speed: ${data.wind.speed} MPH`;
+    elements.todayweather.classList.remove("d-none");
+}
 
 function getUVIndex(lat, lon) {
-  const uviQueryURL = `https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${apiKey}`;
-
-  $.ajax({
-    url: uviQueryURL,
-    method: "GET",
-  }).then(function(uviResponse) {
-    console.log(uviResponse);
-
-    const uvIndex = uviResponse.value;
-    const uvIndexP = $(`
-      <p>UV Index: 
-        <span id="uvIndexColor" class="px-2 py-2 rounded">${uvIndex}</span>
-      </p>
-    `);
-
-    $("#cityDetail").append(uvIndexP);
-
-    // Set UV index color based on conditions
-    if (uvIndex >= 0 && uvIndex <= 2) {
-      $("#uvIndexColor").css("background-color", "#3EA72D").css("color", "white");
-    } else if (uvIndex >= 3 && uvIndex <= 5) {
-      $("#uvIndexColor").css("background-color", "#FFF300");
-    } else if (uvIndex >= 6 && uvIndex <= 7) {
-      $("#uvIndexColor").css("background-color", "#F18B00");
-    } else if (uvIndex >= 8 && uvIndex <= 10) {
-      $("#uvIndexColor").css("background-color", "#E53210").css("color", "white");
-    } else {
-      $("#uvIndexColor").css("background-color", "#B567A4").css("color", "white");
-    }
-  });
+    const url = `https://api.openweathermap.org/data/2.5/uvi/forecast?lat=${lat}&lon=${lon}&appid=${APIKey}&cnt=1`;
+    return axios.get(url).then(response => {
+        const uvBadge = setUVBadge(response.data[0].value);
+        elements.currentUV.innerHTML = "UV Index: ";
+        elements.currentUV.appendChild(uvBadge);
+    });
 }
 
-// Function to fetch 5-day forecast
-function getForecast(lat, lon) {
-  const futureWeatherForcast = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=imperial&exclude=current,minutely,hourly,alerts&appid=${apiKey}`;
+function getForecast(cityID) {
+    const url = `https://api.openweathermap.org/data/2.5/forecast?id=${cityID}&appid=${APIKey}`;
+    return axios.get(url).then(response => {
+        elements.fiveday.classList.remove("d-none");
+        const forecastData = response.data.list;
+        
+        elements.forecast.forEach((forecastEl, index) => {
+            const forecastIndex = index * 8 + 4;
+            const data = forecastData[forecastIndex];
+            const date = new Date(data.dt * 1000);
 
-  $.ajax({
-    url: futureWeatherForcast,
-    method: "GET",
-  }).then(function(futureForcast) {
-    console.log(futureForcast);
-    $("#fiveDay").empty();
-
-    for (let i = 1; i < 6; i++) {
-      const { dt, weather, temp, humidity } = futureForcast.daily[i];
-      const currentDate = moment.unix(dt).format("MM/DD/YYYY");
-      const iconImage = `<img src="https://openweathermap.org/img/w/${weather[0].icon}.png" alt="${weather[0].main}" />`;
-
-      const futureForcastCard = $(`
-        <div class="pl-3">
-          <div class="card pl-3 pt-3 mb-3 bg-primary text-light" style="width: 12rem;">
-            <div class="card-body">
-              <h5>${currentDate}</h5>
-              <p>${iconImage}</p>
-              <p>Temp: ${temp.day} °F</p>
-              <p>Humidity: ${humidity}%</p>
-            </div>
-          </div>
-        </div>
-      `);
-
-      $("#fiveDay").append(futureForcastCard);
-    }
-  });
+            forecastEl.innerHTML = `
+                <p class="mt-2 mb-1 forecastDate">${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}</p>
+                <img src="https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png" alt="${data.weather[0].description}">
+                <p>Temp: ${degreeChange(data.main.temp)} &#176F</p>
+                <p>Humidity: ${data.main.humidity}%</p>
+            `;
+        });
+    });
 }
 
-// Event listener for search button
-$("#searchBtn").on("click", function(event) {
-  event.preventDefault();
+function getWeather(cityName) {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${APIKey}`;
+    axios.get(url).then(response => {
+        displayWeatherData(response.data);
+        getUVIndex(response.data.coord.lat, response.data.coord.lon);
+        return response.data.id;
+    }).then(cityID => {
+        getForecast(cityID);
+    });
+}
 
-  const city = $("#enterCity").val().trim();
-  getCurrentWeather(city);
-  if (!searchHistoryList.includes(city)) {
-    searchHistoryList.push(city);
-    const searchedCity = $(`
-      <li class="list-group-item">${city}</li>
-    `);
-    $("#searchHistory").append(searchedCity);
-  }
-
-  localStorage.setItem("city", JSON.stringify(searchHistoryList));
-  console.log(searchHistoryList);
+elements.search.addEventListener("click", () => {
+    const searchTerm = elements.city.value;
+    getWeather(searchTerm);
+    searchHistory.push(searchTerm);
+    localStorage.setItem("search", JSON.stringify(searchHistory));
+    displayHistory();
 });
 
-// Event listener for search history
-$(document).on("click", ".list-group-item", function() {
-  const listCity = $(this).text();
-  getCurrentWeather(listCity);
+elements.clear.addEventListener("click", () => {
+    localStorage.clear();
+    searchHistory = [];
+    displayHistory();
 });
 
-// Display last searched city forecast on page load
-$(document).ready(function() {
-  const searchHistoryArr = JSON.parse(localStorage.getItem("city"));
+function displayHistory() {
+    elements.history.innerHTML = "";
+    for (let term of searchHistory) {
+        const item = document.createElement("input");
+        item.type = "text";
+        item.readOnly = true;
+        item.classList.add("formControl", "d-block", "bg-light");
+        item.value = term;
+        item.addEventListener("click", () => getWeather(item.value));
+        elements.history.appendChild(item);
+    }
+}
 
-  if (searchHistoryArr !== null) {
-    const lastSearchedIndex = searchHistoryArr.length - 1;
-    const lastSearchedCity = searchHistoryArr[lastSearchedIndex];
-    getCurrentWeather(lastSearchedCity);
-    console.log(`Last searched city: ${lastSearchedCity}`);
-  }
-});
+displayHistory();
+if (searchHistory.length) {
+    getWeather(searchHistory[searchHistory.length - 1]);
+}
