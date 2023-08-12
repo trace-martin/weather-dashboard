@@ -1,10 +1,10 @@
 # Weather Dashboard
 This Weather Dashboard is an interactive web application that allows users to retrieve current weather data and a 5-day forecast for any city. With a focus on clean design and user-friendliness, the Weather Dashboard ensures users are always just one click away from comprehensive weather updates.
 ## Table of Contents:
+- [Deployment](#deployment)
 - [Features](#features)
 - [User Story](#user-story)
 - [Acceptance Criteria](#acceptance-criteria)
-- [Deployment](#deployment)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Built With](#built-with)
@@ -12,7 +12,9 @@ This Weather Dashboard is an interactive web application that allows users to re
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
 
-
+## Deployment
+[Checkout the Weather Dashboard](https://trace-martin.github.io/weather-dashboard/)
+## Preview
 ![](assets/images/Capture.PNG)
 ## Features
 1) <b>Current Weather Data:</b> Fetches and displays the following for the searched city:
@@ -53,8 +55,7 @@ THEN I am presented with a 5-day forecast that displays the date, an icon repres
 WHEN I click on a city in the search history
 THEN I am again presented with current and future conditions for that city
 ```
-## Deployment
-[Checkout the Weather Dashboard](https://trace-martin.github.io/weather-dashboard/)
+
 ## Installation
 1) Clone the repository:
 ```
