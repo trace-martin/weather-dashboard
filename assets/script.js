@@ -84,11 +84,15 @@ function getWeather(cityName) {
 }
 
 elements.search.addEventListener("click", () => {
-    const searchTerm = elements.city.value;
-    getWeather(searchTerm);
-    searchHistory.push(searchTerm);
-    localStorage.setItem("search", JSON.stringify(searchHistory));
-    displayHistory();
+  const searchTerm = elements.city.value;
+  if (searchTerm) { 
+      getWeather(searchTerm);
+      searchHistory.push(searchTerm);
+      localStorage.setItem("search", JSON.stringify(searchHistory));
+      displayHistory();
+  } else {
+      alert('Please enter a city name before searching.');
+  }
 });
 
 elements.clear.addEventListener("click", () => {
